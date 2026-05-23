@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>ProofWriter Mobile</title>
+<style>
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#273549;
+  --border:#334155;--text:#e2e8f0;--muted:#94a3b8;
+  --accent:#6366f1;--accent2:#8b5cf6;--green:#10b981;--red:#ef4444;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Georgia,serif;overflow:hidden;}
+
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;overflow:hidden;}
+.screen.hidden{display:none!important;}
+
+/* ── Brand ── */
+.brand{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.brand em{color:var(--accent);font-style:normal;}
+
+/* ── Centered screens (setup / auth) ── */
+.center-screen{align-items:center;justify-content:flex-start;padding:32px 20px;overflow-y:auto;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;}
+.card h2{font-size:17px;font-weight:700;margin-bottom:8px;}
+.card p{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:16px;}
+
+/* ── Inputs ── */
+.field-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block;}
+.field-input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-size:15px;font-family:Georgia,serif;padding:10px 12px;
+  outline:none;margin-bottom:14px;
+}
+.field-input:focus{border-color:var(--accent);}
+.field-input::placeholder{color:#475569;}
+
+/* ── Buttons ── */
+.btn{
+  width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;
+  font-family:Georgia,serif;cursor:pointer;transition:opacity 0.15s;margin-bottom:10px;
+  display:block;text-align:center;
+}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 2px 10px rgba(99,102,241,0.3);}
+.btn-primary:hover{opacity:0.88;}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-outline:hover{background:var(--surface2);color:var(--text);}
+.btn-google{
+  background:#fff;color:#3c4043;border:1px solid #dadce0;
+  display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;
+  border-radius:10px;padding:13px;cursor:pointer;width:100%;
+  font-family:'Roboto',Georgia,serif;margin-bottom:10px;transition:background 0.15s;
+}
+.btn-google:hover{background:#f8f9fa;}
+
+/* ── Setup instructions ── */
+.setup-info{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:4px;}
+.setup-info summary{font-size:13px;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;}
+.setup-info summary::before{content:'▶';font-size:9px;transition:transform 0.15s;}
+details[open] .setup-info summary::before{transform:rotate(90deg);}
+.setup-info ol{padding-left:18px;margin-top:10px;font-size:13px;color:var(--muted);line-height:1.9;}
+.setup-info a{color:var(--accent);}
+.setup-info strong{color:var(--text);}
+.setup-info code{background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:3px;font-size:12px;}
+
+/* ── Files screen ── */
+.top-bar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.toolbar{
+  padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border);
+  flex-shrink:0;display:flex;gap:8px;align-items:center;
+}
+.search-input{
+  flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-size:15px;font-family:Georgia,serif;padding:9px 12px;outline:none;
+}
+.search-input:focus{border-color:var(--accent);}
+.new-btn{
+  background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);
+  border-radius:8px;padding:9px 14px;font-size:14px;font-family:Georgia,serif;cursor:pointer;
+  white-space:nowrap;flex-shrink:0;transition:background 0.15s;
+}
+.new-btn:hover{background:rgba(16,185,129,0.25);}
+
+.files-list{flex:1;overflow-y:auto;padding:10px 12px;}
+.file-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s;
+  display:flex;align-items:center;gap:10px;
+}
+.file-item:hover,.file-item:active{border-color:#475569;}
+.file-icon{font-size:20px;flex-shrink:0;}
+.file-info{flex:1;min-width:0;}
+.file-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.file-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.file-arrow{color:#475569;font-size:18px;flex-shrink:0;}
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-state .icon{font-size:36px;margin-bottom:12px;}
+.empty-state p{font-size:14px;line-height:1.6;}
+
+/* ── Editor screen ── */
+.editor-header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:10px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.back-btn{
+  background:none;border:none;color:var(--muted);font-size:28px;cursor:pointer;
+  padding:0 4px;line-height:1;flex-shrink:0;display:flex;align-items:center;
+}
+.doc-title-input{
+  flex:1;background:transparent;border:1px solid transparent;border-radius:6px;
+  color:var(--text);font-family:Georgia,serif;font-size:15px;padding:5px 7px;
+  outline:none;min-width:0;
+}
+.doc-title-input:focus{background:var(--surface2);border-color:var(--border);}
+.save-btn{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-family:Georgia,serif;
+  cursor:pointer;flex-shrink:0;white-space:nowrap;transition:opacity 0.15s;
+}
+.save-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.editor-meta{
+  padding:5px 14px 6px;background:var(--surface2);border-bottom:1px solid var(--border);
+  font-size:11px;color:#475569;display:flex;justify-content:space-between;flex-shrink:0;
+}
+.editor-body{flex:1;overflow:hidden;display:flex;position:relative;}
+.doc-textarea{
+  flex:1;width:100%;background:var(--surface);border:none;color:var(--text);
+  font-family:Georgia,serif;font-size:16px;line-height:1.8;
+  padding:18px 16px;outline:none;resize:none;overflow-y:auto;
+}
+.doc-textarea::placeholder{color:#475569;}
+
+/* ── Utility ── */
+.signout-btn{
+  background:none;border:1px solid var(--border);border-radius:6px;
+  color:var(--muted);font-size:12px;padding:6px 10px;cursor:pointer;
+  font-family:Georgia,serif;transition:all 0.15s;
+}
+.signout-btn:hover{color:var(--text);border-color:#475569;}
+.settings-btn{
+  background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;
+}
+
+/* ── Loading overlay ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9000;
+  display:flex;align-items:center;justify-content:center;
+}
+.overlay.hidden{display:none;}
+.overlay-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:28px 32px;text-align:center;max-width:300px;width:90%;
+}
+.overlay-box p{font-size:14px;color:var(--muted);line-height:1.6;margin-top:12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{
+  width:30px;height:30px;border:3px solid rgba(99,102,241,0.2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;
+}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);
+  background:#10b981;color:#fff;padding:10px 20px;border-radius:10px;
+  font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  font-family:Georgia,serif;opacity:0;transition:opacity 0.25s,transform 0.25s;
+  white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.error{background:var(--red);}
+
+/* ── Note banner ── */
+.note-banner{
+  background:rgba(99,102,241,0.08);border-bottom:1px solid rgba(99,102,241,0.2);
+  padding:7px 14px;font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     Screen 1: First-time Setup
+═══════════════════════════════════════════════ -->
+<div id="screen-setup" class="screen center-screen hidden">
+  <div style="margin-bottom:24px;" class="brand">&#9999;&#65039; <em>Proof</em>Writer Mobile</div>
+  <div class="card">
+    <h2>First-time setup</h2>
+    <p>Enter your Google OAuth Client ID so this app can connect to Google Drive and read your ProofWriter documents.</p>
+
+    <label class="field-label" for="clientIdInput">Google OAuth Client ID</label>
+    <input id="clientIdInput" class="field-input" type="text"
+      placeholder="000000000.apps.googleusercontent.com"
+      autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+
+    <label class="field-label" for="folderIdInput">Drive Folder ID <span style="color:#475569;font-size:10px;text-transform:none;">(optional — leave blank to search all Drive)</span></label>
+    <input id="folderIdInput" class="field-input" type="text"
+      placeholder="Paste folder ID from Drive URL"
+      autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+
+    <label class="field-label" for="allowedEmailInput">Allowed Google Account <span style="color:#475569;font-size:10px;text-transform:none;">(recommended — blocks all other Google accounts)</span></label>
+    <input id="allowedEmailInput" class="field-input" type="email"
+      placeholder="yourname@gmail.com"
+      autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+
+    <button class="btn btn-primary" onclick="saveSetup()">Save &amp; Continue</button>
+    <button class="btn btn-outline" id="setupBackBtn" onclick="showScreen('auth')" style="display:none;">&#8592; Back</button>
+
+    <details>
+      <div class="setup-info">
+        <summary>Setup instructions (one-time, ~5 minutes)</summary>
+        <ol>
+          <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a></li>
+          <li>Create a project &#8594; <strong>APIs &amp; Services &#8594; Library</strong></li>
+          <li>Search for and enable <strong>Google Drive API</strong></li>
+          <li>Go to <strong>Credentials &#8594; Create Credentials &#8594; OAuth 2.0 Client ID</strong></li>
+          <li>Application type: <strong>Web application</strong></li>
+          <li>Under <strong>Authorised JavaScript origins</strong>, add the URL you use to open this page (e.g. <code>https://yourgithub.github.io</code> or your local server address)</li>
+          <li>Copy the <strong>Client ID</strong> and paste it above</li>
+          <li><strong>Folder ID:</strong> open your ProofWriter folder in Google Drive on desktop, copy the last part of the URL (e.g. <code>drive.google.com/drive/folders/<strong>1aBcD…</strong></code>)</li>
+        </ol>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     Screen 2: Sign In
+═══════════════════════════════════════════════ -->
+<div id="screen-auth" class="screen center-screen hidden">
+  <div style="margin-bottom:32px;" class="brand">&#9999;&#65039; <em>Proof</em>Writer Mobile</div>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:44px;margin-bottom:16px;">&#128196;</div>
+    <h2 style="margin-bottom:8px;">Connect to Google Drive</h2>
+    <p>Sign in to access and edit your ProofWriter documents on the go.</p>
+    <button class="btn-google" id="signInBtn" onclick="signIn()">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <button class="btn btn-outline" onclick="showSetup()" style="font-size:13px;padding:9px;">&#9881; Settings</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     Screen 3: Documents List
+═══════════════════════════════════════════════ -->
+<div id="screen-files" class="screen hidden">
+  <div class="top-bar">
+    <div class="brand" style="font-size:16px;">&#9999;&#65039; <em>Proof</em>Writer</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="settings-btn" onclick="showSetup()" title="Settings">&#9881;</button>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <input class="search-input" id="searchInput" type="search" placeholder="&#128269; Search documents&#8230;"
+      oninput="filterFiles()" autocorrect="off" autocomplete="off"/>
+    <button class="new-btn" onclick="newDocument()">&#43; New</button>
+  </div>
+  <div class="files-list" id="filesList">
+    <div class="empty-state"><div class="icon">&#128196;</div><p>Loading your documents&#8230;</p></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     Screen 4: Text Editor
+═══════════════════════════════════════════════ -->
+<div id="screen-editor" class="screen hidden">
+  <div class="editor-header">
+    <button class="back-btn" onclick="goBack()" title="Back to documents">&#8249;</button>
+    <input class="doc-title-input" id="docTitle" placeholder="Untitled"
+      autocorrect="off" spellcheck="false"
+      onblur="onTitleChange()" onkeydown="if(event.key==='Enter')this.blur()"/>
+    <button class="save-btn" id="saveBtn" onclick="saveDocument()">Save</button>
+  </div>
+  <div class="note-banner">
+    &#128161; Tip: Heading and bold formatting is managed on the desktop app. Mobile editing works in plain text.
+  </div>
+  <div class="editor-meta">
+    <span id="wordCount">0 words</span>
+    <span id="saveStatus"></span>
+  </div>
+  <div class="editor-body">
+    <textarea class="doc-textarea" id="docTextarea"
+      placeholder="Start writing here&#8230;"
+      oninput="onTextChange()"
+      spellcheck="true"
+      autocorrect="on"
+      autocapitalize="sentences"></textarea>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     Loading Overlay
+═══════════════════════════════════════════════ -->
+<div class="overlay hidden" id="loadingOverlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <p id="loadingMsg">Loading&#8230;</p>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" onload="onGISLoad()" async defer></script>
+
+<script>
+'use strict';
+
+// ── Drive API endpoints ──
+const DRIVE_BASE   = 'https://www.googleapis.com/drive/v3/files';
+const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
+
+// ── State ──
+let tokenClient   = null;
+let accessToken   = null;
+let allFiles      = [];        // {id, name, modifiedTime, _docName?}
+let discoveredFolderId = null; // inferred from first file's parents
+let currentFileId = null;
+let currentDoc    = null;
+let isDirty       = false;
+let autoSaveTimer = null;
+
+// ── Screen management ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  const s = document.getElementById('screen-' + name);
+  if (s) s.classList.remove('hidden');
+}
+
+// ── Persist config ──
+const cfg = {
+  get:  k => localStorage.getItem('pw_mobile_' + k) || '',
+  set:  (k, v) => localStorage.setItem('pw_mobile_' + k, v),
+  del:  k => localStorage.removeItem('pw_mobile_' + k)
+};
+
+// ── App init ──
+window.addEventListener('load', () => {
+  const cid = cfg.get('client_id');
+  if (!cid) {
+    document.getElementById('setupBackBtn').style.display = 'none';
+    showScreen('setup');
+  } else {
+    document.getElementById('clientIdInput').value     = cid;
+    document.getElementById('folderIdInput').value     = cfg.get('folder_id');
+    document.getElementById('allowedEmailInput').value = cfg.get('allowed_email');
+    document.getElementById('setupBackBtn').style.display = 'block';
+    showScreen('auth');
+  }
+});
+
+// ── GIS init (called when the GIS script finishes loading) ──
+function onGISLoad() {
+  const cid = cfg.get('client_id');
+  if (!cid) return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cid,
+    scope:     'https://www.googleapis.com/auth/drive',
+    callback:  onToken
+  });
+}
+
+async function onToken(resp) {
+  hideLoading();
+  if (resp.error) {
+    showToast('Sign-in failed: ' + resp.error, true);
+    showScreen('auth');
+    return;
+  }
+  accessToken = resp.access_token;
+
+  // ── Layer 2: allowed-account check ──
+  const allowed = cfg.get('allowed_email');
+  if (allowed) {
+    try {
+      const r    = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
+                               { headers: { Authorization: 'Bearer ' + accessToken } });
+      const info = await r.json();
+      if ((info.email || '').toLowerCase() !== allowed) {
+        google.accounts.oauth2.revoke(accessToken, () => {});
+        accessToken = null;
+        showToast('Access denied — this app is restricted to ' + allowed, true);
+        showScreen('auth');
+        return;
+      }
+    } catch(e) {
+      // Network error fetching userinfo — fail closed to be safe
+      google.accounts.oauth2.revoke(accessToken, () => {});
+      accessToken = null;
+      showToast('Could not verify Google account. Please try again.', true);
+      showScreen('auth');
+      return;
+    }
+  }
+
+  showScreen('files');
+  loadFiles();
+}
+
+// ── Sign in / out ──
+function signIn() {
+  const cid = cfg.get('client_id');
+  if (!cid) { showSetup(); return; }
+
+  if (!tokenClient) {
+    if (typeof google === 'undefined') {
+      showToast('Google services are loading — please try again in a moment', true);
+      return;
+    }
+    onGISLoad();
+  }
+  if (!tokenClient) {
+    showToast('Google Sign-In is not ready. Please refresh the page.', true);
+    return;
+  }
+  // Empty prompt string re-uses existing session silently if valid
+  tokenClient.requestAccessToken({ prompt: '' });
+}
+
+function signOut() {
+  if (accessToken && typeof google !== 'undefined') {
+    google.accounts.oauth2.revoke(accessToken, () => {});
+  }
+  accessToken = null;
+  allFiles = [];
+  showScreen('auth');
+}
+
+// ── Setup ──
+function showSetup() {
+  document.getElementById('clientIdInput').value    = cfg.get('client_id');
+  document.getElementById('folderIdInput').value    = cfg.get('folder_id');
+  document.getElementById('allowedEmailInput').value = cfg.get('allowed_email');
+  const hasClient = !!cfg.get('client_id');
+  document.getElementById('setupBackBtn').style.display = hasClient ? 'block' : 'none';
+  showScreen('setup');
+}
+
+function saveSetup() {
+  const cid   = document.getElementById('clientIdInput').value.trim();
+  const fid   = document.getElementById('folderIdInput').value.trim();
+  const email = document.getElementById('allowedEmailInput').value.trim().toLowerCase();
+  if (!cid) { showToast('Please enter a Client ID', true); return; }
+  cfg.set('client_id', cid);
+  if (fid)   cfg.set('folder_id', fid);     else cfg.del('folder_id');
+  if (email) cfg.set('allowed_email', email); else cfg.del('allowed_email');
+  // Re-init GIS with the (possibly new) client ID
+  tokenClient = null;
+  if (typeof google !== 'undefined') onGISLoad();
+  showScreen('auth');
+}
+
+// ── Drive helpers ──
+async function driveReq(url, opts) {
+  opts = opts || {};
+  const resp = await fetch(url, {
+    ...opts,
+    headers: Object.assign({ Authorization: 'Bearer ' + accessToken }, opts.headers || {})
+  });
+  if (resp.status === 401) {
+    accessToken = null;
+    showScreen('auth');
+    throw new Error('Session expired — please sign in again.');
+  }
+  if (!resp.ok) {
+    let msg = 'HTTP ' + resp.status;
+    try { const e = await resp.json(); if (e.error && e.error.message) msg = e.error.message; } catch(_) {}
+    throw new Error(msg);
+  }
+  return resp;
+}
+
+async function listDriveFiles() {
+  const fid = cfg.get('folder_id') || discoveredFolderId;
+  let q = "name contains 'pw_' and mimeType = 'application/json' and trashed = false";
+  if (fid) q += " and '" + fid + "' in parents";
+  const url = DRIVE_BASE
+    + '?q=' + encodeURIComponent(q)
+    + '&fields=' + encodeURIComponent('files(id,name,modifiedTime,parents)')
+    + '&orderBy=modifiedTime+desc&pageSize=200';
+  const resp = await driveReq(url);
+  const data = await resp.json();
+  return data.files || [];
+}
+
+async function getDriveFile(fileId) {
+  const resp = await driveReq(DRIVE_BASE + '/' + fileId + '?alt=media');
+  return await resp.json();
+}
+
+async function updateDriveFile(fileId, doc) {
+  await driveReq(DRIVE_UPLOAD + '/' + fileId + '?uploadType=media', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(doc)
+  });
+}
+
+async function createDriveFile(filename, doc) {
+  const fid = cfg.get('folder_id') || discoveredFolderId;
+  const meta = { name: filename, mimeType: 'application/json' };
+  if (fid) meta.parents = [fid];
+  const boundary = 'PW_MB_' + Date.now();
+  const body = [
+    '--' + boundary,
+    'Content-Type: application/json; charset=UTF-8',
+    '',
+    JSON.stringify(meta),
+    '--' + boundary,
+    'Content-Type: application/json',
+    '',
+    JSON.stringify(doc),
+    '--' + boundary + '--'
+  ].join('\r\n');
+  const resp = await driveReq(DRIVE_UPLOAD + '?uploadType=multipart', {
+    method: 'POST',
+    headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+    body
+  });
+  const data = await resp.json();
+  return data.id;
+}
+
+// ── File list ──
+async function loadFiles() {
+  showLoading('Loading documents…');
+  try {
+    allFiles = await listDriveFiles();
+    // Auto-discover the Drive folder from first file
+    if (!cfg.get('folder_id') && allFiles.length > 0 && allFiles[0].parents && allFiles[0].parents.length > 0) {
+      discoveredFolderId = allFiles[0].parents[0];
+    }
+    renderFileList(allFiles);
+  } catch(e) {
+    showToast(e.message, true);
+    renderFileList([]);
+  }
+  hideLoading();
+}
+
+function fileDisplayName(f) {
+  if (f._docName) return f._docName;
+  // Strip pw_ prefix and .json suffix for a fallback label
+  return f.name.replace(/^pw_/, '').replace(/\.json$/, '');
+}
+
+function renderFileList(files) {
+  const list = document.getElementById('filesList');
+  if (!files.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#128196;</div><p>No ProofWriter documents found.<br/>Tap <strong>+ New</strong> to create one,<br/>or check your Drive Folder ID in Settings.</p></div>';
+    return;
+  }
+  list.innerHTML = files.map(f => {
+    const name = esc(fileDisplayName(f));
+    const date = relativeDate(f.modifiedTime);
+    return '<div class="file-item" onclick="openFile(\'' + f.id + '\')">'
+      + '<div class="file-icon">&#128196;</div>'
+      + '<div class="file-info">'
+      + '<div class="file-name">' + name + '</div>'
+      + '<div class="file-meta">Edited ' + date + '</div>'
+      + '</div>'
+      + '<div class="file-arrow">&#8250;</div>'
+      + '</div>';
+  }).join('');
+}
+
+function filterFiles() {
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  if (!q) { renderFileList(allFiles); return; }
+  renderFileList(allFiles.filter(f => fileDisplayName(f).toLowerCase().includes(q)));
+}
+
+// ── Delta <-> plain text ──
+function deltaToText(delta) {
+  if (!delta || !Array.isArray(delta.ops)) return '';
+  return delta.ops
+    .filter(op => typeof op.insert === 'string')
+    .map(op => op.insert)
+    .join('');
+}
+
+function textToDelta(text) {
+  if (!text) return { ops: [{ insert: '\n' }] };
+  const ops = [];
+  const parts = text.split('\n');
+  parts.forEach((part, i) => {
+    if (part) ops.push({ insert: part });
+    if (i < parts.length - 1) ops.push({ insert: '\n' });
+  });
+  // Quill delta must end with a \n
+  if (!ops.length || ops[ops.length - 1].insert !== '\n') ops.push({ insert: '\n' });
+  return { ops };
+}
+
+// ── Open a document ──
+async function openFile(fileId) {
+  showLoading('Opening document…');
+  try {
+    const doc = await getDriveFile(fileId);
+    currentFileId = fileId;
+    currentDoc    = doc;
+    isDirty       = false;
+
+    // Cache the document name in the file list entry
+    const entry = allFiles.find(f => f.id === fileId);
+    if (entry) entry._docName = doc.name || 'Untitled';
+
+    document.getElementById('docTitle').value    = doc.name || 'Untitled';
+    document.getElementById('docTextarea').value = deltaToText(doc.content);
+    updateWordCount();
+    updateSaveStatus('');
+    showScreen('editor');
+    // Small delay so the textarea is visible before focusing
+    setTimeout(() => document.getElementById('docTextarea').focus(), 120);
+  } catch(e) {
+    showToast('Could not open document: ' + e.message, true);
+  }
+  hideLoading();
+}
+
+// ── New document ──
+function genDocId() {
+  return 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+}
+
+async function newDocument() {
+  const id  = genDocId();
+  const doc = {
+    id,
+    name:    'Untitled',
+    created: Date.now(),
+    updated: Date.now(),
+    content: { ops: [{ insert: '\n' }] }
+  };
+  showLoading('Creating document…');
+  try {
+    const fileId = await createDriveFile('pw_' + id + '.json', doc);
+    currentFileId = fileId;
+    currentDoc    = doc;
+    isDirty       = false;
+
+    // Insert at top of local list
+    allFiles.unshift({
+      id:           fileId,
+      name:         'pw_' + id + '.json',
+      modifiedTime: new Date().toISOString(),
+      _docName:     'Untitled'
+    });
+
+    document.getElementById('docTitle').value    = 'Untitled';
+    document.getElementById('docTextarea').value = '';
+    updateWordCount();
+    updateSaveStatus('');
+    showScreen('editor');
+    setTimeout(() => {
+      document.getElementById('docTitle').focus();
+      document.getElementById('docTitle').select();
+    }, 120);
+  } catch(e) {
+    showToast('Could not create document: ' + e.message, true);
+  }
+  hideLoading();
+}
+
+// ── Save ──
+async function saveDocument() {
+  if (!currentFileId || !currentDoc) return;
+
+  const title = (document.getElementById('docTitle').value || '').trim() || 'Untitled';
+  const text  = document.getElementById('docTextarea').value;
+  const doc   = {
+    ...currentDoc,        // preserves id, created, plan, and any other fields
+    name:    title,
+    updated: Date.now(),
+    content: textToDelta(text)
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Saving…';
+  updateSaveStatus('Saving…');
+
+  try {
+    await updateDriveFile(currentFileId, doc);
+    currentDoc = doc;
+    isDirty    = false;
+    updateSaveStatus('✓ Saved');
+    showToast('Saved');
+
+    // Refresh file list entry
+    const entry = allFiles.find(f => f.id === currentFileId);
+    if (entry) { entry._docName = title; entry.modifiedTime = new Date().toISOString(); }
+  } catch(e) {
+    showToast('Save failed: ' + e.message, true);
+    updateSaveStatus('Save failed');
+  }
+
+  btn.disabled    = false;
+  btn.textContent = 'Save';
+}
+
+// ── Auto-save (3 s debounce) ──
+function onTextChange() {
+  updateWordCount();
+  isDirty = true;
+  updateSaveStatus('Unsaved changes');
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveDocument, 3000);
+}
+
+function onTitleChange() {
+  isDirty = true;
+  updateSaveStatus('Unsaved changes');
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(saveDocument, 2000);
+}
+
+function updateWordCount() {
+  const text  = (document.getElementById('docTextarea').value || '').trim();
+  const count = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  document.getElementById('wordCount').textContent = count + ' word' + (count === 1 ? '' : 's');
+}
+
+function updateSaveStatus(msg) {
+  document.getElementById('saveStatus').textContent = msg;
+}
+
+// ── Back navigation ──
+async function goBack() {
+  if (isDirty) {
+    // Save automatically rather than prompting
+    await saveDocument();
+  }
+  showScreen('files');
+}
+
+// Intercept Android hardware back button
+window.addEventListener('popstate', () => {
+  const editorVisible = !document.getElementById('screen-editor').classList.contains('hidden');
+  if (editorVisible) {
+    history.pushState(null, '', location.href);
+    goBack();
+  }
+});
+// Push a state so the first popstate fires correctly
+history.pushState(null, '', location.href);
+
+// ── Loading overlay ──
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg || 'Loading…';
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast' + (isError ? ' error' : '') + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Utils ──
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function relativeDate(iso) {
+  if (!iso) return '';
+  const d    = new Date(iso);
+  const secs = (Date.now() - d) / 1000;
+  if (secs < 60)      return 'just now';
+  if (secs < 3600)    return Math.floor(secs / 60)   + 'm ago';
+  if (secs < 86400)   return Math.floor(secs / 3600) + 'h ago';
+  if (secs < 604800)  return Math.floor(secs / 86400)+ 'd ago';
+  return d.toLocaleDateString();
+}
+</script>
+</body>
+</html>
