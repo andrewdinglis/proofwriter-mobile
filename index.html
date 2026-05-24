@@ -368,7 +368,7 @@ function onGISLoad() {
   if (!cid) return;
   const tcOpts = {
     client_id: cid,
-    scope:     'https://www.googleapis.com/auth/drive email',
+    scope:     'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email',
     callback:  onToken
   };
   const hint = cfg.get('allowed_email');
@@ -391,6 +391,7 @@ async function onToken(resp) {
     try {
       const r    = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',
                                { headers: { Authorization: 'Bearer ' + accessToken } });
+      if (!r.ok) throw new Error('userinfo ' + r.status);
       const info = await r.json();
       if ((info.email || '').toLowerCase() !== allowed) {
         google.accounts.oauth2.revoke(accessToken, () => {});
