@@ -383,6 +383,11 @@ async function onToken(resp) {
     showScreen('auth');
     return;
   }
+  // If the cached token is missing the Drive scope, force fresh consent
+  if (!resp.scope || !resp.scope.includes('www.googleapis.com/auth/drive')) {
+    tokenClient.requestAccessToken({ prompt: 'consent' });
+    return;
+  }
   accessToken = resp.access_token;
 
   // ── Layer 2: allowed-account check ──
