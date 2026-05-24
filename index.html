@@ -489,7 +489,7 @@ async function driveReq(url, opts) {
 
 async function listDriveFiles() {
   const fid = cfg.get('folder_id') || discoveredFolderId;
-  let q = "name contains 'pw_' and mimeType = 'application/json' and trashed = false";
+  let q = "name contains 'pw_' and not mimeType contains 'google-apps' and trashed = false";
   if (fid) q += " and '" + fid + "' in parents";
   const url = DRIVE_BASE
     + '?q=' + encodeURIComponent(q)
@@ -502,12 +502,12 @@ async function listDriveFiles() {
 }
 
 async function getDriveFile(fileId) {
-  const resp = await driveReq(DRIVE_BASE + '/' + fileId + '?alt=media');
+  const resp = await driveReq(DRIVE_BASE + '/' + fileId + '?alt=media&supportsAllDrives=true');
   return await resp.json();
 }
 
 async function updateDriveFile(fileId, doc) {
-  await driveReq(DRIVE_UPLOAD + '/' + fileId + '?uploadType=media', {
+  await driveReq(DRIVE_UPLOAD + '/' + fileId + '?uploadType=media&supportsAllDrives=true', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(doc)
@@ -530,7 +530,7 @@ async function createDriveFile(filename, doc) {
     JSON.stringify(doc),
     '--' + boundary + '--'
   ].join('\r\n');
-  const resp = await driveReq(DRIVE_UPLOAD + '?uploadType=multipart', {
+  const resp = await driveReq(DRIVE_UPLOAD + '?uploadType=multipart&supportsAllDrives=true', {
     method: 'POST',
     headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
     body
