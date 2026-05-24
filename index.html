@@ -545,13 +545,32 @@ async function createDriveFile(filename, doc) {
 }
 
 // ── File list ──
+async function listDriveFilesNoFolder() {
+  let q = "name contains 'pw_' and not mimeType contains 'google-apps' and trashed = false";
+  const url = DRIVE_BASE
+    + '?q=' + encodeURIComponent(q)
+    + '&fields=' + encodeURIComponent('files(id,name,modifiedTime,parents)')
+    + '&orderBy=modifiedTime+desc&pageSize=200'
+    + '&includeItemsFromAllDrives=true&supportsAllDrives=true';
+  const resp = await driveReq(url);
+  const data = await resp.json();
+  return data.files || [];
+}
+
 async function loadFiles() {
   showLoading('Loading documents…');
   try {
     allFiles = await listDriveFiles();
-    // Auto-discover the Drive folder from first file
     if (!cfg.get('folder_id') && allFiles.length > 0 && allFiles[0].parents && allFiles[0].parents.length > 0) {
       discoveredFolderId = allFiles[0].parents[0];
+    }
+    if (allFiles.length === 0 && cfg.get('folder_id')) {
+      // Folder filter returned nothing — try without it to diagnose
+      const all = await listDriveFilesNoFolder();
+      if (all.length > 0) {
+        showToast('Folder ID set but files found elsewhere — check your Folder ID in Settings', true);
+        allFiles = all;
+      }
     }
     renderFileList(allFiles);
   } catch(e) {
