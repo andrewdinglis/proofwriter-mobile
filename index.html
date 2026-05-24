@@ -494,7 +494,8 @@ async function listDriveFiles() {
   const url = DRIVE_BASE
     + '?q=' + encodeURIComponent(q)
     + '&fields=' + encodeURIComponent('files(id,name,modifiedTime,parents)')
-    + '&orderBy=modifiedTime+desc&pageSize=200';
+    + '&orderBy=modifiedTime+desc&pageSize=200'
+    + '&includeItemsFromAllDrives=true&supportsAllDrives=true';
   const resp = await driveReq(url);
   const data = await resp.json();
   return data.files || [];
