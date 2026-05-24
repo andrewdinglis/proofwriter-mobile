@@ -257,9 +257,12 @@ details[open] .setup-info summary::before{transform:rotate(90deg);}
 <div id="screen-files" class="screen hidden">
   <div class="top-bar">
     <div class="brand" style="font-size:16px;">&#9999;&#65039; <em>Proof</em>Writer</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="settings-btn" onclick="showSetup()" title="Settings">&#9881;</button>
-      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-direction:column;align-items:flex-end;">
+      <div style="display:flex;gap:8px;">
+        <button class="settings-btn" onclick="showSetup()" title="Settings">&#9881;</button>
+        <button class="signout-btn" onclick="signOut()">Sign out</button>
+      </div>
+      <div id="signedInAs" style="font-size:11px;color:#64748b;display:none;"></div>
     </div>
   </div>
   <div class="toolbar">
@@ -390,23 +393,25 @@ async function onToken(resp) {
   }
   accessToken = resp.access_token;
 
-  // ── Layer 2: allowed-account check ──
+  // ── Layer 2: allowed-account check + show signed-in email ──
   const allowed = cfg.get('allowed_email');
-  if (allowed) {
-    try {
-      const r    = await fetch('https://www.googleapis.com/drive/v3/about?fields=user',
-                               { headers: { Authorization: 'Bearer ' + accessToken } });
-      if (!r.ok) throw new Error('about ' + r.status);
-      const info = await r.json();
-      if ((info.user && info.user.emailAddress || '').toLowerCase() !== allowed) {
-        google.accounts.oauth2.revoke(accessToken, () => {});
-        accessToken = null;
-        showToast('Access denied — this app is restricted to ' + allowed, true);
-        showScreen('auth');
-        return;
-      }
-    } catch(e) {
-      // Network error fetching userinfo — fail closed to be safe
+  try {
+    const r    = await fetch('https://www.googleapis.com/drive/v3/about?fields=user',
+                             { headers: { Authorization: 'Bearer ' + accessToken } });
+    if (!r.ok) throw new Error('about ' + r.status);
+    const info = await r.json();
+    const email = (info.user && info.user.emailAddress) || '';
+    if (allowed && email.toLowerCase() !== allowed) {
+      google.accounts.oauth2.revoke(accessToken, () => {});
+      accessToken = null;
+      showToast('Access denied — this app is restricted to ' + allowed, true);
+      showScreen('auth');
+      return;
+    }
+    const el = document.getElementById('signedInAs');
+    if (el && email) { el.textContent = email; el.style.display = 'block'; }
+  } catch(e) {
+    if (allowed) {
       google.accounts.oauth2.revoke(accessToken, () => {});
       accessToken = null;
       showToast('Could not verify Google account. Please try again.', true);
@@ -803,7 +808,7 @@ function showToast(msg, isError) {
   t.textContent = msg;
   t.className   = 'toast' + (isError ? ' error' : '') + ' show';
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+  toastTimer = setTimeout(() => t.classList.remove('show'), isError ? 7000 : 3200);
 }
 
 // ── Utils ──
