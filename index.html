@@ -366,11 +366,14 @@ window.addEventListener('load', () => {
 function onGISLoad() {
   const cid = cfg.get('client_id');
   if (!cid) return;
-  tokenClient = google.accounts.oauth2.initTokenClient({
+  const tcOpts = {
     client_id: cid,
-    scope:     'https://www.googleapis.com/auth/drive',
+    scope:     'https://www.googleapis.com/auth/drive email',
     callback:  onToken
-  });
+  };
+  const hint = cfg.get('allowed_email');
+  if (hint) tcOpts.login_hint = hint;
+  tokenClient = google.accounts.oauth2.initTokenClient(tcOpts);
 }
 
 async function onToken(resp) {

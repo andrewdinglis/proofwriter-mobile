@@ -4,6 +4,8 @@ Mobile companion for ProofWriter — read and edit your ProofWriter documents fr
 
 Open the app at: https://andrewdinglis.github.io/proofwriter-mobile/
 
+> Update this URL once GitHub Pages is enabled on this repository.
+
 ## Setup
 
 See the setup guide in the main ProofWriter repository.
